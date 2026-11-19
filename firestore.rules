@@ -1,0 +1,15 @@
+rules_version = '2';
+
+// SafeShot stores only scan metadata (counts, severities, inference source) —
+// never scanned content. Each anonymous user can only read/write their own
+// records.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /users/{userId}/scans/{scanId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SafeShot — Scan before you share</title>
+  <meta name="description" content="SafeShot scans screenshots and text for leaked secrets before you share them. Hybrid AI: Gemini Nano runs on-device via Firebase AI Logic, with cloud fallback only when you allow it." />
+  <link rel="stylesheet" href="/src/styles.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap header-inner">
+      <div class="brand">
+        <span class="logo">🛡️</span>
+        <div>
+          <h1>SafeShot</h1>
+          <p class="tagline">Scan before you share.</p>
+        </div>
+      </div>
+      <div class="header-right">
+        <span id="device-badge" class="device-badge">Loading…</span>
+        <label class="private-switch" title="When on, prompts never leave your device (ONLY_ON_DEVICE). When off, the cloud model is used as a fallback (PREFER_ON_DEVICE).">
+          <input type="checkbox" id="private-toggle" />
+          <span>🔒 Private mode</span>
+        </label>
+      </div>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <div id="demo-banner" class="banner" hidden>
+      <strong>Demo mode.</strong> No Firebase config detected, so text scanning uses the built-in
+      local pattern detector (real detection — emails, keys, tokens, cards) and history stays in
+      your browser. Add your Firebase config to enable Gemini Nano on-device AI + cloud fallback.
+      See <code>README.md</code> → Setup.
+    </div>
+
+    <section class="hero">
+      <h2>Your screenshot is one paste away from leaking a secret.</h2>
+      <p>
+        API keys in error logs, passwords in chat screenshots, emails in bug reports —
+        SafeShot finds them <em>before</em> you hit send. The AI runs
+        <strong>on your device with Gemini Nano</strong> through Firebase AI Logic whenever
+        possible, so the sensitive content often never leaves your machine at all.
+      </p>
+      <ul class="hero-points">
+        <li>🔒 <strong>Private by design</strong> — on-device first; cloud only as fallback, and never in Private mode</li>
+        <li>⚡ <strong>Free &amp; offline-capable</strong> — on-device inference costs nothing and works without internet</li>
+        <li>✅ <strong>Verified findings</strong> — AI results are cross-checked against deterministic patterns; hallucinations are dropped</li>
+      </ul>
+    </section>
+
+    <section class="scanner card">
+      <div class="tabs" role="tablist">
+        <button class="tab-btn active" data-tab="text" role="tab">📝 Scan text</button>
+        <button class="tab-btn" data-tab="image" role="tab">🖼️ Scan screenshot</button>
+      </div>
+
+      <div id="panel-text" class="panel">
+        <label for="text-input">Paste text — a chat log, error output, code snippet, email draft…</label>
+        <textarea id="text-input" rows="9" placeholder="Paste text here…"></textarea>
+        <div class="actions">
+          <button id="scan-text-btn" class="btn btn-primary">🔍 Scan text</button>
+          <button id="sample-btn" class="btn btn-secondary">Load sample with secrets</button>
+          <button id="clear-text-btn" class="btn btn-ghost">Clear</button>
+        </div>
+      </div>
+
+      <div id="panel-image" class="panel" hidden>
+        <div id="drop-zone" class="drop-zone">
+          <p class="drop-icon">🖼️</p>
+          <p id="drop-label">Drop a screenshot here, click to choose, or paste from clipboard</p>
+          <p class="muted small">PNG or JPEG only (on-device model limit). Nothing is uploaded until you press Scan — and in Private mode, never.</p>
+          <input type="file" id="file-input" accept="image/png,image/jpeg" hidden />
+        </div>
+        <div class="actions">
+          <button id="scan-image-btn" class="btn btn-primary" disabled>🔍 Scan image</button>
+        </div>
+
+        <div id="blur-section" class="blur-section" hidden>
+          <h3>Blur editor — hide what the scan found</h3>
+          <p class="muted">Drag rectangles over sensitive areas. The blur is baked into the downloaded PNG and cannot be reversed.</p>
+          <canvas id="blur-canvas"></canvas>
+          <div class="actions">
+            <button id="blur-undo" class="btn btn-secondary" disabled>Undo</button>
+            <button id="blur-clear" class="btn btn-secondary" disabled>Clear all</button>
+            <button id="blur-download" class="btn btn-primary" disabled>⬇️ Download safe image</button>
+            <span id="blur-count" class="muted"></span>
+          </div>
+        </div>
+      </div>
+
+      <p id="status" class="status" role="status"></p>
+    </section>
+
+    <section id="results" class="results card" hidden></section>
+
+    <section class="stats card">
+      <h2>Your privacy ledger</h2>
+      <p class="muted">Counts only — scanned content is never stored. Synced to Firestore when signed in, otherwise kept in this browser.</p>
+      <div class="stat-grid">
+        <div class="stat"><span id="stat-scans" class="stat-num">0</span><span class="stat-label">scans</span></div>
+        <div class="stat"><span id="stat-findings" class="stat-num">0</span><span class="stat-label">findings caught</span></div>
+        <div class="stat"><span id="stat-ondevice" class="stat-num">—</span><span class="stat-label">scans on-device</span></div>
+        <div class="stat"><span id="stat-high" class="stat-num">0</span><span class="stat-label">high-severity</span></div>
+      </div>
+      <h3>Recent scans</h3>
+      <ul id="history-list" class="history-list">
+        <li class="empty">No scans yet. Your first scan will appear here.</li>
+      </ul>
+    </section>
+
+    <section class="how card">
+      <h2>How the hybrid AI works</h2>
+      <ol>
+        <li><strong>On-device first.</strong> On Chrome desktop (v139+) with Gemini Nano downloaded, your text or screenshot is scanned locally via Firebase AI Logic (<code>InferenceMode.PREFER_ON_DEVICE</code>). Free, private, offline.</li>
+        <li><strong>Cloud fallback.</strong> If no local model is available, the same prompt runs on the cloud Gemini model — unless Private mode (<code>ONLY_ON_DEVICE</code>) is on, in which case the scan fails safe instead of sending your data anywhere.</li>
+        <li><strong>Verified output.</strong> Every AI finding is validated: for text, the flagged value must appear verbatim in your input; findings are merged with a deterministic pattern detector (API keys, JWTs, cards with Luhn check…). Hallucinations are dropped.</li>
+        <li><strong>You stay in control.</strong> Each result is labeled with its inference source (<code>response.inferenceSource</code>), so you always know whether your data stayed on-device or went to the cloud.</li>
+      </ol>
+      <p class="muted small">
+        Built with Firebase AI Logic (hybrid inference), App Check, Anonymous Auth, Firestore and
+        Remote Config. Requires Chrome on Desktop v139+ with the
+        <code>chrome://flags/#prompt-api-for-gemini-nano-multimodal-input</code> flag for on-device inference.
+      </p>
+    </section>
+
+    <footer class="site-footer">
+      <p>SafeShot — built for #BuildHybridAI 2026. Open source (MIT). No scanned content ever leaves your device in Private mode.</p>
+    </footer>
+  </main>
+
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>
