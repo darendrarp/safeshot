@@ -87,7 +87,7 @@ mode, cloud-fallback flag, max text length).
 ## Links
 
 - **Repository:** https://github.com/darendrarp/safeshot (public, MIT)
-- **Live demo:** https://safeshot-[TBD].vercel.app <!-- fill after deploy -->
+- **Live demo:** https://safeshot-lyart.vercel.app
 - **Demo video:** https://www.youtube.com/watch?v=[TBD] (≤ 3 min, see VIDEO_SCRIPT.md)
 
 ## Testing instructions (for judges)

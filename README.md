@@ -8,6 +8,9 @@
 Built for **#BuildHybridAI 2026** — a Firebase hackathon about apps that run
 AI on-device and in the cloud with one SDK.
 
+**Live demo:** https://safeshot-lyart.vercel.app
+**Repository:** https://github.com/darendrarp/safeshot
+
 ![Status](https://img.shields.io/badge/status-submission--ready-green)
 ![License](https://img.shields.io/badge/license-MIT-blue)
 ![Firebase](https://img.shields.io/badge/Firebase-AI%20Logic-orange)
